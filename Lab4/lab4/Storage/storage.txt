@@ -1,0 +1,7 @@
+username=zack
+password=zack
+name=zack
+surname=zack
+lastName=zack
+birthday=21.09.2004logged_in_username=zacklogged_in_username=zack
+logged_in_username=zack
