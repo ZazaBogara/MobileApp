@@ -27,15 +27,21 @@ class _EditProfilePageState extends State<EditProfilePageWidget> {
     _loadUserInfo();
   }
 
-  Future<void> _loadUserInfo() async {
+  Future<Map<String, String>> _loadUserInfo() async {
+    await Future.delayed(const Duration(seconds: 2));
     final SharedPreferences prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _nameController.text = prefs.getString('name') ?? '';
-      _surnameController.text = prefs.getString('surname') ?? '';
-      _lastNameController.text = prefs.getString('lastName') ?? '';
-      _birthdayController.text = prefs.getString('birthday') ?? '';
-    });
+    final String name = prefs.getString('name') ?? '';
+    final String surname = prefs.getString('surname') ?? '';
+    final String lastName = prefs.getString('lastName') ?? '';
+    final String birthday = prefs.getString('birthday') ?? '';
+    return {
+      'name': name,
+      'surname': surname,
+      'lastName': lastName,
+      'birthday': birthday,
+    };
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -87,44 +93,100 @@ class _EditProfilePageState extends State<EditProfilePageWidget> {
           Center(
             child: Padding(
               padding: const EdgeInsets.all(20.0),
-              child: Column(
-                children: <Widget>[
-                  SizedBox(
-                    width: deviceWidth(context) / 2,
-                    height: deviceHeight(context) * 0.1,
-                    child: LoginTextFormFieldWidget(controller: _nameController, hintText: "Enter your name", validationName: "Name"),
-                  ),
-                  SizedBox(
-                    width: deviceWidth(context) / 2,
-                    height: deviceHeight(context) * 0.1,
-                    child: LoginTextFormFieldWidget(controller: _surnameController, hintText: "Enter your surname", validationName: "Name"),
-                  ),
-                  SizedBox(
-                    width: deviceWidth(context) / 2,
-                    height: deviceHeight(context) * 0.1,
-                    child: LoginTextFormFieldWidget(controller: _lastNameController, hintText: "Enter your last name", validationName: "Name"),
-                  ),
-                  SizedBox(
-                    width: deviceWidth(context) / 2,
-                    height: deviceHeight(context) * 0.1,
-                    child: LoginTextFormFieldWidget(controller: _birthdayController, hintText: "Enter your birthday", validationName: "Date"),
-                  ),
-                  SizedBox(height: deviceHeight(context) * 0.04),
-                  SizedBox(
-                    width: deviceWidth(context) / 2,
-                    height: deviceHeight(context) * 0.05,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        _saveProfileInfo();
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => const ProfilePageWidget(title: "some title")),
-                        );
-                      },
-                      child: const Text('Save Changes'),
-                    ),
-                  ),
-                ],
+              child: FutureBuilder<Map<String, String>>(
+                future: _loadUserInfo(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return CircularProgressIndicator();
+                  } else if (snapshot.hasError) {
+                    return Text('Error: ${snapshot.error}');
+                  } else {
+                    final Map<String, String> userInfo = snapshot.data!;
+                    return Column(
+                      children: <Widget>[
+                        SizedBox(
+                          width: deviceWidth(context) / 2,
+                          height: deviceHeight(context) * 0.1,
+                          child: TextFormField(
+                            controller: _nameController..text = userInfo['name']!,
+                            decoration: InputDecoration(
+                              hintText: "Enter your name",
+                            ),
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Please enter your name';
+                              }
+                              return null;
+                            },
+                          ),
+                        ),
+                        SizedBox(
+                          width: deviceWidth(context) / 2,
+                          height: deviceHeight(context) * 0.1,
+                          child: TextFormField(
+                            controller: _surnameController..text = userInfo['surname']!,
+                            decoration: InputDecoration(
+                              hintText: "Enter your surname",
+                            ),
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Please enter your surname';
+                              }
+                              return null;
+                            },
+                          ),
+                        ),
+                        SizedBox(
+                          width: deviceWidth(context) / 2,
+                          height: deviceHeight(context) * 0.1,
+                          child: TextFormField(
+                            controller: _lastNameController..text = userInfo['lastName']!,
+                            decoration: InputDecoration(
+                              hintText: "Enter your last name",
+                            ),
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Please enter your last name';
+                              }
+                              return null;
+                            },
+                          ),
+                        ),
+                        SizedBox(
+                          width: deviceWidth(context) / 2,
+                          height: deviceHeight(context) * 0.1,
+                          child: TextFormField(
+                            controller: _birthdayController..text = userInfo['birthday']!,
+                            decoration: InputDecoration(
+                              hintText: "Enter your birthday",
+                            ),
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Please enter your birthday';
+                              }
+                              return null;
+                            },
+                          ),
+                        ),
+                        SizedBox(height: deviceHeight(context) * 0.04),
+                        SizedBox(
+                          width: deviceWidth(context) / 2,
+                          height: deviceHeight(context) * 0.05,
+                          child: ElevatedButton(
+                            onPressed: () {
+                              _saveProfileInfo();
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (context) => const ProfilePageWidget(title: "some title")),
+                              );
+                            },
+                            child: const Text('Save Changes'),
+                          ),
+                        ),
+                      ],
+                    );
+                  }
+                },
               ),
             ),
           ),

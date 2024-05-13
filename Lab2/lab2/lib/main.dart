@@ -1,71 +1,68 @@
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
-
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'Pages/login.dart';
+import 'Pages/profile.dart';
+import 'controller/storage.dart';
+import 'controller/databloc.dart';
 
-void main() {
-  runApp(const MyApp());
+Future<bool> checkInternetConnection() async {
+  var connectivityResult = await Connectivity().checkConnectivity();
+  return connectivityResult != ConnectivityResult.none;
+}
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  final LocalStorage _localStorage = SharedPreferencesStorage();
+  final String? loggedInUsername = await _localStorage.getData("logged_in_username");
+
+  bool hasInternet = await checkInternetConnection();
+
+  runApp(MyApp(
+    loggedInUsername: loggedInUsername,
+    hasInternet: hasInternet,
+  ));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final String? loggedInUsername;
+  final bool hasInternet;
 
-  // This widget is the root of your application.
+  const MyApp({Key? key, required this.loggedInUsername, required this.hasInternet}) : super(key: key);
+
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-        useMaterial3: true,
+    return BlocProvider(
+      create: (_) => DataBloc(SharedPreferencesStorage()), // Use your storage implementation here
+      child: MaterialApp(
+        title: 'Flutter Demo',
+        theme: ThemeData(
+          colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+          useMaterial3: true,
+        ),
+        home: loggedInUsername != null
+            ? hasInternet
+            ? const ProfilePageWidget(title: 'Your Planner')
+            : _buildNoInternetAlertDialog(context) // Pass context to access Navigator
+            : const LoginPageWidget(title: 'Flutter Demo Home Page'),
       ),
-      home: const LoginPageWidget(title: 'Flutter Demo Home Page'),
     );
   }
-}
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-  final String title;
-
-  @override
-  State<MyHomePage> createState() => _MyHomePageState();
-}
-
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
-
-  void _incrementCounter() {
-    setState(() {
-      _counter++;
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: Text(widget.title),
-      ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const Text(
-              'You have pushed the button this many times:',
-            ),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-          ],
+  AlertDialog _buildNoInternetAlertDialog(BuildContext context) {
+    return AlertDialog(
+      title: const Text('No Internet Connection'),
+      content: const Text('Please check your internet connection and try again.'),
+      actions: <Widget>[
+        TextButton(
+          onPressed: () {
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(builder: (context) => const ProfilePageWidget(title: 'Your Planner')),
+            );
+          },
+          child: const Text('OK'),
         ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
+      ],
     );
   }
 }

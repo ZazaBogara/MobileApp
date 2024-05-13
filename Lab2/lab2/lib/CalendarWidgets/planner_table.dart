@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class PlannerTable extends StatelessWidget {
-  const PlannerTable({super.key});
+  const PlannerTable({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
