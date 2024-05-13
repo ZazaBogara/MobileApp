@@ -1,4 +1,5 @@
-import 'dart:io';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 
 
 abstract class LocalStorage {
@@ -12,60 +13,37 @@ class SharedPreferencesStorage implements LocalStorage {
   final String filePath = "D:\\Programing\\flutterLabs\\Lab4\\lab4\\Storage\\storage.txt";
 
   SharedPreferencesStorage();
+  static const String baseUrl = 'http://127.0.0.1:5000';
 
-  @override
   Future<void> saveData(String key, String value) async {
-    final File file = File(filePath);
-    IOSink sink;
-    sink = file.openWrite(mode: FileMode.append);
-    sink.writeln('$key=$value');
-    try {
-      await sink.flush();
-    } finally {
-      await sink.close();
-    }
+    final response = await http.post(
+      Uri.parse('$baseUrl/save'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'key': key, 'value': value}),
+    );
+    // Handle response as needed
   }
 
-  @override
   Future<String?> getData(String key) async {
-    final File file = File(filePath);
-    try {
-      if (!await file.exists()) {
-        return null;
-      }
-      final lines = await file.readAsLines();
-      if (lines.isEmpty) {
-        return null;
-      }
-      for (var line in lines) {
-        if (line.startsWith('$key=')) {
-          return line.substring(key.length + 1);
-        }
-      }
-      return null;
-    } on FileSystemException {
+    final response = await http.get(Uri.parse('$baseUrl/get?key=$key'));
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body)['value'];
+    } else {
       return null;
     }
   }
 
-  @override
   Future<void> updateData(String key, String value) async {
-    final File file = File(filePath);
-    List<String> lines = await file.readAsLines();
-    for (int i = 0; i < lines.length; i++) {
-      if (lines[i].startsWith('$key=')) {
-        lines[i] = '$key=$value';
-        break;
-      }
-    }
-    await file.writeAsString(lines.join('\n'));
+    final response = await http.put(
+      Uri.parse('$baseUrl/update'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'key': key, 'value': value}),
+    );
+    // Handle response as needed
   }
 
-  @override
   Future<void> deleteData(String key) async {
-    final File file = File(filePath);
-    List<String> lines = await file.readAsLines();
-    lines.removeWhere((line) => line.startsWith('$key='));
-    await file.writeAsString(lines.join('\n'));
+    final response = await http.delete(Uri.parse('$baseUrl/delete?key=$key'));
+    // Handle response as needed
   }
 }

@@ -38,20 +38,24 @@ class _ProfilePageState extends State<ProfilePageWidget> {
   String _username = 'YourUsername';
   String _name = 'Your Name';
   String appBarTitle = 'Your Planner';
+  late Future<Map<String, String>> _userDataFuture;
 
 
-  Future<void> _getUserInfo() async {
+
+  Future<Map<String, String>> _getUserInfo() async {
+    await Future.delayed(const Duration(seconds: 1));
     final String? loggedInUsername = await _localStorage.getData('logged_in_username');
-    if (loggedInUsername != null) {
-      _username = loggedInUsername;
-      _name = await _localStorage.getData('name') ?? 'Your Name';
-    }
-    setState(() {});
+    final String? name = await _localStorage.getData('name');
+    return {
+      'username': loggedInUsername ?? 'YourUsername',
+      'name': name ?? 'Your Name',
+    };
   }
+
   @override
   void initState() {
     super.initState();
-    _getUserInfo();
+    _userDataFuture = _getUserInfo();
     _setAppBarTitle();
   }
 
@@ -125,19 +129,38 @@ class _ProfilePageState extends State<ProfilePageWidget> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[
-                      const CircleAvatar(
-                        radius: 40.0,
-                        //backgroundImage: AssetImage('./assets/default_profile_image.jpg'),
-                      ),
-                      const SizedBox(height: 20.0),
-                      Text(
-                        'Login: $_username',
-                        style: const TextStyle(fontSize: 13.0),
-                      ),
-                      const SizedBox(height: 10.0),
-                      Text(
-                        'Name: $_name',
-                        style: const TextStyle(fontSize: 13.0),
+                      FutureBuilder<Map<String, String>>(
+                        future: _userDataFuture,
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState == ConnectionState.waiting) {
+                            return Center(child: CircularProgressIndicator());
+                          } else if (snapshot.hasError) {
+                            return Center(child: Text('Error: ${snapshot.error}'));
+                          } else {
+                            final username = snapshot.data?['username'] ?? 'YourUsername';
+                            final name = snapshot.data?['name'] ?? 'Your Name';
+
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: <Widget>[
+                                const CircleAvatar(
+                                  radius: 40.0,
+                                  //backgroundImage: AssetImage('./assets/default_profile_image.jpg'),
+                                ),
+                                const SizedBox(height: 20.0),
+                                Text(
+                                  'Login: $username',
+                                  style: const TextStyle(fontSize: 13.0),
+                                ),
+                                const SizedBox(height: 10.0),
+                                Text(
+                                  'Name: $name',
+                                  style: const TextStyle(fontSize: 13.0),
+                                ),
+                              ],
+                            );
+                          }
+                        },
                       ),
                     ],
                   ),

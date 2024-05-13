@@ -1,38 +1,80 @@
+import 'dart:async';
+
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:footer/footer.dart';
 import 'package:footer/footer_view.dart';
-import '../controller/storage.dart'; // Змінено імпорт для використання класів LocalStorage і SharedPreferencesStorage
+import '../controller/storage.dart';
 import '../Pages/calendar.dart';
 import '../Pages/login.dart';
 import 'edit_page.dart';
 
-class ProfilePageWidget extends StatefulWidget {
-  const ProfilePageWidget({super.key, required this.title});
+AlertDialog _showNoInternetAlertDialog(BuildContext context) {
+  return AlertDialog(
+    title: const Text('No Internet Connection'),
+    content: const Text('Please check your internet connection and try again.'),
+    actions: <Widget>[
+      TextButton(
+        onPressed: () {
+          Navigator.pop(context); // Close the dialog
+        },
+        child: const Text('OK'),
+      ),
+    ],
+  );
+}
+
+class ProfilePageWidget extends StatelessWidget {
+  const ProfilePageWidget({Key? key, required this.title}) : super(key: key);
   final String title;
 
   @override
-  State createState() => _ProfilePageState();
+  Widget build(BuildContext context) {
+    return ProfilePageView(title: title);
+  }
 }
 
-class _ProfilePageState extends State<ProfilePageWidget> {
-  final LocalStorage _localStorage = SharedPreferencesStorage(); // Використання класу SharedPreferencesStorage для роботи з локальним сховищем
+class ProfilePageView extends StatefulWidget {
+  const ProfilePageView({Key? key, required this.title}) : super(key: key);
+  final String title;
 
-  String _username = 'YourUsername';
-  String _name = 'Your Name';
+  @override
+  _ProfilePageViewState createState() => _ProfilePageViewState();
+}
+
+class _ProfilePageViewState extends State<ProfilePageView> {
+  final LocalStorage _localStorage = SharedPreferencesStorage();
+  late String _username = "YourUsername";
+  late String _name = "YourName";
+  String appBarTitle = 'Your Planner';
+  late Future<void> _userDataFuture;
 
   @override
   void initState() {
     super.initState();
-    _getUserInfo();
+    _userDataFuture = _getUserInfo();
+    _setAppBarTitle();
   }
 
   Future<void> _getUserInfo() async {
     final String? loggedInUsername = await _localStorage.getData('logged_in_username');
-    if (loggedInUsername != null) {
-      _username = loggedInUsername;
-      _name = await _localStorage.getData('name') ?? 'Your Name';
-    }
-    setState(() {});
+    final String? name = await _localStorage.getData('name');
+    setState(() {
+      _username = loggedInUsername ?? 'YourUsername';
+      _name = name ?? 'Your Name';
+    });
+  }
+
+  Future<void> _setAppBarTitle() async {
+    final hasInternet = await checkInternetConnection();
+    setState(() {
+      appBarTitle = hasInternet ? 'Your Planner' : 'No Internet';
+    });
+  }
+
+  Future<bool> checkInternetConnection() async {
+    var connectivityResult = await Connectivity().checkConnectivity();
+    return connectivityResult != ConnectivityResult.none;
   }
 
   @override
@@ -44,7 +86,7 @@ class _ProfilePageState extends State<ProfilePageWidget> {
       appBar: AppBar(
         centerTitle: true,
         backgroundColor: appColor,
-        title: const Text('Your Planner', style: TextStyle(color: textColorInverted)),
+        title: Text(appBarTitle, style: TextStyle(color: textColorInverted)),
       ),
       body: FooterView(
         footer: Footer(
@@ -132,9 +174,36 @@ class _ProfilePageState extends State<ProfilePageWidget> {
                 const SizedBox(height: 10.0),
                 ElevatedButton(
                   onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => const LoginPageWidget(title: "some title")),
+                    // Show confirmation dialog
+                    showDialog(
+                      context: context,
+                      builder: (BuildContext context) {
+                        return AlertDialog(
+                          title: Text('Logout'),
+                          content: Text('Are you sure you want to log out?'),
+                          actions: <Widget>[
+                            TextButton(
+                              onPressed: () {
+                                Navigator.of(context).pop(); // Close the dialog
+                              },
+                              child: Text('Cancel'),
+                            ),
+                            TextButton(
+                              onPressed: () async {
+                                // Delete the logged_in_username
+                                await _localStorage.deleteData('logged_in_username');
+                                // Navigate back to the login page
+                                Navigator.pushAndRemoveUntil(
+                                  context,
+                                  MaterialPageRoute(builder: (context) => const LoginPageWidget(title: "some title")),
+                                      (Route<dynamic> route) => false, // Remove all routes until the new one
+                                );
+                              },
+                              child: Text('Confirm'),
+                            ),
+                          ],
+                        );
+                      },
                     );
                   },
                   child: const Text('Logout'),

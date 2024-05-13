@@ -77,12 +77,12 @@ class _RegistrationPageState extends State<RegistrationPageWidget> {
                   SizedBox(
                     width: deviceWidth(context) / 2,
                     height: deviceHeight(context) * 0.1,
-                    child: LoginTextFormFieldWidget(controller: _usernameController, hintText: "Enter your username", validationName: null),
+                    child: LoginTextFormFieldWidget(controller: _usernameController, hintText: "Enter your username", validationName: "Name"),
                   ),
                   SizedBox(
                     width: deviceWidth(context) / 2,
                     height: deviceHeight(context) * 0.1,
-                    child: LoginTextFormFieldWidget(controller: _passwordController, hintText: "Enter your password", validationName: null), // Додано поле паролю
+                    child: LoginTextFormFieldWidget(controller: _passwordController, hintText: "Enter your password", validationName: "Password"), // Додано поле паролю
                   ),
                   SizedBox(
                     width: deviceWidth(context) / 2,
